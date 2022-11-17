@@ -93,7 +93,7 @@ namespace AssetStudioGUI
         [DllImport("gdi32.dll")]
         private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont, IntPtr pdv, [In] ref uint pcFonts);
 
-        public AssetStudioGUIForm()
+        public AssetStudioGUIForm(string strFilename)
         {
             Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
             InitializeComponent();
@@ -109,6 +109,11 @@ namespace AssetStudioGUI
             Logger.Default = logger;
             Progress.Default = new Progress<int>(SetProgressBarValue);
             Studio.StatusStripUpdate = StatusStripUpdate;
+            
+            if(strFilename != null)
+            {
+                OpenFiles(new string[] { strFilename });
+            }
         }
 
         private void AssetStudioGUIForm_DragEnter(object sender, DragEventArgs e)
@@ -138,16 +143,21 @@ namespace AssetStudioGUI
             }
         }
 
-        private async void loadFile_Click(object sender, EventArgs e)
+        private async void OpenFiles(string[] arrayFilenames)
+        {
+            ResetForm();
+            openDirectoryBackup = Path.GetDirectoryName(arrayFilenames[0]);
+            assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
+            await Task.Run(() => assetsManager.LoadFiles(arrayFilenames));
+            BuildAssetStructures();
+        }
+
+        private void loadFile_Click(object sender, EventArgs e)
         {
             openFileDialog1.InitialDirectory = openDirectoryBackup;
             if (openFileDialog1.ShowDialog(this) == DialogResult.OK)
             {
-                ResetForm();
-                openDirectoryBackup = Path.GetDirectoryName(openFileDialog1.FileNames[0]);
-                assetsManager.SpecifyUnityVersion = specifyUnityVersion.Text;
-                await Task.Run(() => assetsManager.LoadFiles(openFileDialog1.FileNames));
-                BuildAssetStructures();
+                OpenFiles(openFileDialog1.FileNames);
             }
         }
 
